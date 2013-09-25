@@ -1,4 +1,4 @@
-cobalt-backup-client
-====================
+Veta Client
+===========
 
-Python novaclient extension for cobalt-backup
+Python novaclient extension for Veta.
