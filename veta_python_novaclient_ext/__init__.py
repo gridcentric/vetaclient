@@ -17,6 +17,7 @@
 An extension module for novaclient that allows the `nova` application access to
 the veta backup API extensions.
 """
+import json
 import re
 
 from novaclient import utils
@@ -34,6 +35,19 @@ def _print_instance_list(servers):
     columns = ['ID', 'Name', 'Status']
     sortby_index = 1
     utils.print_list(servers, columns, sortby_index=sortby_index)
+
+def _print_backup_list(backups):
+    class Backup:
+        def __init__(self, id, ts, schedules):
+            self.id = id
+            self.timestamp = ts
+            self.schedules = schedules
+
+    columns = ['ID', 'Timestamp', 'Schedules']
+    objs = map(lambda b: \
+        Backup(b['uuid'], b['veta_backup_at'], b['veta_backup_ids']),
+            backups)
+    utils.print_list(objs, columns, sortby_index=1)
 
 def _epoch_to_seconds(e):
     e = e.lower()
@@ -114,7 +128,7 @@ def do_backup_schedule_add(cs, args):
     _print_backup_schedule(result)
 
 @utils.arg('server', metavar='<server>', help="ID or name of the instance")
-@utils.arg('schedule-id', metavar='<schedule-id>',
+@utils.arg('schedule_id', metavar='<schedule-id>',
            help="ID of schedule item to update")
 @utils.arg('frequency', metavar='<frequency>',
            help="Frequency with which to perform backups (e.g. 10m, 1h, 1d")
@@ -170,7 +184,7 @@ def do_backup_schedule_list_backups(cs, args):
     server = _find_server(cs, args.server)
     result = cs.veta.backup_schedule_list_backups(server,
         args.schedule_id)
-    _print_instance_list(result)
+    _print_backup_list(result)
 
 class VetaServer(servers.Server):
     """
@@ -236,4 +250,4 @@ class VetaServerManager(servers.ServerManager):
             params = {}
         header, info = self._action("backup_schedule_list_backups",
                                     base.getid(server), params)
-        return [self.get(server) for server in info]
+        return info
